@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Next.js build output
+.next/
+out/
+
+# Local environment
+.env*.local
+
+# Logs and caches
+npm-debug.log*
+*.tsbuildinfo
+.DS_Store
+
+# Generated at build time
+public/search-index.json
+
+# Temporary/internal research — keep out of the public repo
+docs/research/
