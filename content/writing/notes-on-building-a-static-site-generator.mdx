@@ -1,0 +1,48 @@
+---
+title: "Notes on Building a Static Site Generator"
+description: "A small generator is a good way to learn where the complexity in publishing actually lives. Notes from a weekend build."
+date: 2026-09-15
+category: "Engineering Experiments and Personal Technical Notes"
+tags: [experiment, tooling, markdown, static-site]
+---
+
+I built a tiny static site generator over a weekend, mostly to understand why the existing ones feel heavy. The conclusion: the generator is the easy part. The hard part is everything around it.
+
+The whole pipeline is three steps: read files, render Markdown, write HTML. That is maybe three hundred lines. The rest of the work is slugs, links, feeds, and not breaking on the one file that does something weird.
+
+## What took an afternoon
+
+- Walk a directory, parse frontmatter, render Markdown to HTML.
+- A template with a title slot and a body slot.
+- Copy static assets.
+- A dev server that rebuilds on change.
+
+This is genuinely simple. If you have never built one, do it. It is a good weekend.
+
+## What took the rest of the weekend
+
+**Slugs and links.** A link is only correct if the target exists. That means you need the whole graph before you render, or a post-pass to validate. Miss one and you ship a 404.
+
+**Ordering.** Sorting by date is easy until you have two posts on the same day, or a post with no date, or a draft that should be invisible in production but visible locally.
+
+**Drafts.** The bug that bites is not "drafts are hidden." It is "drafts are hidden from the index but still reachable by URL." You need one rule that applies everywhere, not a filter in each template.
+
+**Feeds.** RSS looks trivial and is fiddly: escaping, absolute URLs, dates in the right format, and a stable ordering. Then you find out your reader dedupes by GUID.
+
+## The lesson about complexity
+
+The complexity was never in Markdown. It was in the invariants: every link resolves, every date is valid, every published page is reachable, no draft leaks.
+
+Those invariants are not features. They are properties of the whole system, and they are the reason a "simple" generator grows. If you write them down first, the build is much calmer.
+
+## What I would do differently
+
+- Model the page graph before rendering anything.
+- Make the publication rule a single function used by every output.
+- Validate content at build time and fail loudly.
+- Ship no CLI flags for the first version. Convention beats configuration.
+
+## References
+
+- [RenderMan](https://github.com/rerenderer/rerenderer) — a minimal renderer for reference
+- The [Hugo](https://gohugo.io/) and [Eleventy](https://www.11ty.dev/) docs, for feed and taxonomy conventions

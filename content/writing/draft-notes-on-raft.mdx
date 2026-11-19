@@ -1,0 +1,26 @@
+---
+title: "Draft: Notes on Raft"
+description: "Working notes on Raft leadership, log replication, and the edge cases. Not ready to publish."
+date: 2026-11-18
+category: "Distributed Systems"
+tags: [raft, consensus, notes]
+draft: true
+series: "Distributed systems notes"
+seriesOrder: 2
+---
+
+These are working notes. They are intentionally rough and are excluded from every production surface until `draft` is removed.
+
+## Leader election
+
+Raft splits time into terms. Each term begins with an election. A node that discovers a higher term steps down, which is how a partitioned old leader is retired.
+
+## Log replication
+
+The leader appends entries and replicates them to followers. An entry is committed once a majority has stored it. Only committed entries are applied to the state machine.
+
+## Open questions
+
+- Exactly how does the leader handle a follower log that diverges after a crash?
+- What is the cheapest safe way to change membership without joint consensus?
+- How should snapshots be triggered so a slow follower can catch up?

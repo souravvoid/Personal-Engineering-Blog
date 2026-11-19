@@ -1,0 +1,52 @@
+---
+title: "Consensus Is Not Agreement"
+description: "A system can agree on a value and still be wrong. Consensus protocols solve a narrower problem than most people assume."
+date: 2026-10-28
+category: "Distributed Systems"
+tags: [consensus, raft, distributed-systems, failure]
+series: "Distributed systems notes"
+seriesOrder: 1
+---
+
+The word "consensus" is used for two different things: everyone deciding the same value, and everyone being correct. Protocols like Raft and Paxos deliver the first. The second depends on you.
+
+Consensus is a decision procedure with a safety guarantee and a liveness caveat. It guarantees that two nodes cannot decide different values. It does not guarantee that the decided value is the one you wanted.
+
+## Safety is a property of the protocol
+
+Safety means no two correct nodes decide differently. It holds even when messages are delayed, duplicated, or lost, as long as the fault model is respected. Raft achieves this with a leader, a replicated log, and a quorum. The leader does not invent entries; it orders them. A committed entry is durable because a majority has it.
+
+That is the part people trust. The part people forget is liveness.
+
+## Liveness is a property of the environment
+
+A majority must be able to communicate. If the network partitions your cluster into two halves that cannot talk, only the side with a majority can make progress. The other side stalls, and a leader there steps down. That is correct behavior. It is also an outage for the minority.
+
+There is no free lunch here. A system that kept accepting writes on both sides of a partition would violate safety. Choosing to stop is the protocol doing its job.
+
+```text
+  Partition A (majority)        Partition B (minority)
+  ┌───────────────────┐         ┌───────────────────┐
+  │ leader  │ follower │         │ follower │ follower │
+  │  writes proceed   │         │  no leader, stalls │
+  └───────────────────┘         └───────────────────┘
+```
+
+## The value still has to be validated
+
+Consensus orders client requests. It does not inspect them. A buggy client can propose a bad value, get it committed by a quorum, and the cluster will faithfully replicate the mistake forever.
+
+This is why "we use Raft" is not an answer to "is the data valid." Validation belongs in the state machine, before the entry is proposed or after it is applied.
+
+## Fencing is the missing chapter
+
+A leader can be isolated, keep believing it is leader, and accept a write that the new leader also accepts. Terms prevent most of this, but a client that retries against a stale leader can still cause trouble. Fencing tokens make the storage layer reject writes from an old term.
+
+If you build on top of a consensus system, read the section on fencing. It is usually the last section, and often the one that matters.
+
+## What to take away
+
+- Safety is guaranteed by the protocol; correctness of the value is your job.
+- Liveness requires a communicating majority; partitions cause planned unavailability.
+- Validate in the state machine, not in the client.
+- Fencing protects you from zombie leaders and retried writes.

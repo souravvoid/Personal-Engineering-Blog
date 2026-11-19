@@ -1,0 +1,55 @@
+---
+title: "Small Interfaces Are Not a Style Choice"
+description: "A wide interface is a promise you cannot keep. Narrow seams are how large systems stay changeable."
+date: 2026-09-24
+category: "Software Engineering Principles"
+tags: [design, interfaces, abstraction, maintainability]
+---
+
+Every module has a surface. The surface is the set of operations the rest of the system is allowed to call. Most designs are judged by what the module does. The better question is what it *exposes*.
+
+A module that does one thing and exposes a large interface is a module you cannot change. The interface is a contract, and every caller is a stakeholder in every part of it.
+
+## The cost of a wide seam
+
+A wide interface has three costs that compound.
+
+- **Coupling.** Callers depend on details they do not need. A change to one method forces a review of all callers.
+- **Testing.** More methods means more cases, more mocks, more surface for a test to be wrong.
+- **Reasoning.** A reader must understand the whole surface to know whether a change is safe.
+
+None of these are visible in a single commit. They show up six months later as "we cannot remove this dependency."
+
+## Narrow does not mean tiny
+
+A narrow interface is not necessarily one method. It is the *minimum* set of operations a caller genuinely needs, with no convenience methods that leak the implementation.
+
+If a caller only reads, do not expose a write. If a caller only needs a total, do not expose the components. If a caller only needs "done or not," do not return a status enum with twelve values.
+
+```ts
+// Wide: the caller now knows about retries, caching, and logging.
+class OrderService {
+  create(): Order;
+  retry(id: string): void;
+  invalidateCache(id: string): void;
+  logAudit(event: string): void;
+}
+
+// Narrow: one intent, one observable result.
+interface Orders {
+  place(command: PlaceOrder): Result<Order, OrderError>;
+}
+```
+
+## Interfaces are decisions, not discoveries
+
+You do not find the right interface by reading the code. You decide it by asking what the caller is allowed to know. Then you defend it: when someone asks for another method, the answer is usually "that belongs in the caller."
+
+This is uncomfortable. It is also the work.
+
+## Heuristics
+
+- If you cannot name the caller's intent in one sentence, the interface is too wide.
+- If two callers use different halves of an interface, split it.
+- If a method is only used by tests, it probably should not exist.
+- If adding a feature requires changing the interface, consider whether the feature belongs inside.

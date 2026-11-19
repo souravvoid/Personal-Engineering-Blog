@@ -1,0 +1,55 @@
+---
+title: "Threat Modeling a Web App"
+description: "Security is easier when you draw the system first. A short, repeatable method for finding where your app actually breaks."
+date: 2026-10-20
+category: "Cybersecurity and Information Security"
+tags: [security, threat-modeling, owasp, web]
+---
+
+Threat modeling has a reputation for being a meeting that produces a diagram nobody reads. Done badly, it is. Done well, it is the cheapest security work you will ever do, because it happens before the code exists.
+
+The goal is not to enumerate every attack. It is to find the few places where your design makes a dangerous assumption.
+
+## Start with trust boundaries
+
+Draw the system as boxes and arrows, then mark every place where the level of trust changes: browser to server, server to database, service to service, authenticated to anonymous. Most vulnerabilities live on those lines, not inside the boxes.
+
+A boundary you forgot to draw is a boundary you did not protect.
+
+## Ask four questions per boundary
+
+For each trust boundary, ask:
+
+1. **What can cross it?** Requests, tokens, files, headers, user input.
+2. **Who controls it?** The user, a partner, an internal service, nobody.
+3. **What would it mean to abuse it?** Read data, forge identity, execute code, exhaust resources.
+4. **What is the control?** Authentication, validation, encoding, rate limits, audit logs.
+
+If you cannot name a control, that is a finding. Write it down.
+
+## ASTRIDE, lightly
+
+Spoofing, Tampering, Repudiation, Information disclosure, Denial of service, Elevation of privilege. You do not need the full taxonomy. Use it as a checklist so you do not forget the boring categories. Most real findings are tampering and information disclosure.
+
+| Boundary | Threat | Control |
+| --- | --- | --- |
+| Browser → API | Session theft | HttpOnly, Secure, SameSite cookies |
+| API → DB | SQL injection | Parameterized queries |
+| User upload | Malware / SSRF | Validate type, scan, block internal hosts |
+| Admin panel | Account takeover | MFA, least privilege, audit log |
+
+## The two assumptions that hurt most
+
+**Trusted input.** Any string that arrives from outside is untrusted, including headers, query parameters, and data you stored earlier that came from a user. Encoding and validation happen at the boundary, every time.
+
+**Trusted internal calls.** Service-to-service traffic inside a network is a favorite place to skip authentication. If an attacker reaches one service, they are already inside. Use mutual TLS or signed requests for anything sensitive.
+
+## Make it repeatable
+
+Keep the diagram in the repository next to the code. Update it when the architecture changes. Run the four questions again at that point. A threat model that lives in a slide deck is a threat model that is out of date.
+
+## References
+
+- OWASP [Application Security Verification Standard](https://owasp.org/www-project-application-security-verification-standard/)
+- Microsoft [STRIDE](https://learn.microsoft.com/en-us/security/threat-modeling-tool/stride-model)
+- NIST [SP 800-154](https://csrc.nist.gov/pubs/sp/800/154/final) on data-centric threat modeling

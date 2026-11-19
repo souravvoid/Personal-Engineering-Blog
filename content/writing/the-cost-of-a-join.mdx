@@ -1,0 +1,57 @@
+---
+title: "The Cost of a Join"
+description: "A join is a loop, a sort, or a hash. Which one you get decides whether the query is a millisecond or a minute."
+date: 2026-10-02
+category: "Database Engineering"
+tags: [postgres, sql, query-planning, indexes]
+---
+
+Most slow queries are not slow because the database is bad at its job. They are slow because the query asked for a join the planner could only satisfy one way, and that way was expensive.
+
+A join is not an operator. It is a family of operators, and the planner picks one based on statistics, indexes, and memory. Learn the three shapes and you can usually predict the plan before you run `EXPLAIN`.
+
+## Nested loop
+
+For each row of the outer table, scan the inner table. It wins when the outer side is tiny and the inner side has an index on the join key. It loses badly when the outer side is large and the inner side has no index.
+
+```sql
+SELECT *
+FROM small_table s
+JOIN big_table b ON b.id = s.big_id;
+```
+
+If `big_table.big_id` is indexed, this is fine. If it is not, you have an O(n·m) scan.
+
+## Hash join
+
+Build a hash table from the smaller input, then probe it with the larger input. This is the workhorse for large equi-joins. It needs memory for the build side; if the build side does not fit, it spills to disk and the plan gets slow.
+
+Hash joins cannot use indexes. They read whole tables. That is fine when you need most of the rows, and wasteful when you need a few.
+
+## Merge join
+
+Sort both inputs on the join key, then walk them together. It wins when both sides are already sorted, which is common when the join key is the primary key or a b-tree index. It is also the only join that handles some non-equi conditions well.
+
+## Read the plan, not the query
+
+```sql
+EXPLAIN (ANALYZE, BUFFERS)
+SELECT ...
+```
+
+Look at three things:
+
+1. **The estimated vs. actual row counts.** A big gap means bad statistics. Run `ANALYZE`.
+2. **The join order.** The planner may have picked a smaller table as the outer side than you expected.
+3. **Buffers.** `read=` means it came from disk, not shared buffers. That is where time goes.
+
+## Indexing is a join strategy
+
+An index on the inner join key turns a hash join into a nested loop. That is often the fix. But an index on every column is not a strategy; it is a tax on writes. Index the join keys and the selective filters, then measure.
+
+## Heuristics that hold up
+
+- Prefer equi-joins. Everything else is harder to plan and slower to run.
+- Filter before you join, not after, when the filter is selective.
+- Do not select `*`; it defeats index-only scans and bloats the hash table.
+- A join to a large table with a small result is a smell. Check the cardinality.

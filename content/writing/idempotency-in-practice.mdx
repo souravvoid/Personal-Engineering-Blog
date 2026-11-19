@@ -1,0 +1,59 @@
+---
+title: "Idempotency in Practice"
+description: "Retries are inevitable. A request that is safe to retry is the difference between a blip and a double charge."
+date: 2026-11-05
+category: "Backend Engineering"
+tags: [idempotency, http, api-design, payments]
+---
+
+Every network call fails eventually. The client times out, the connection drops, the load balancer gives up, and the caller retries. If the first request actually succeeded, the retry becomes a second side effect. In a payments API that is a double charge.
+
+Idempotency is the contract that says: sending the same request twice has the same effect as sending it once.
+
+## The key belongs to the operation, not the request
+
+An idempotency key is not a request ID. A request ID identifies a message; an idempotency key identifies an *intent*. Two different requests that mean the same business operation should share a key. Two requests that happen to have the same bytes should not, unless they are genuinely the same intent.
+
+Generate the key on the client, before the first attempt, and reuse it on every retry of that intent. A key generated after a timeout is a new intent, and it will double-charge.
+
+## Store the result, not just the flag
+
+The naive implementation is a set of seen keys. That answers "have I seen this?" but not "what happened?" The client still needs the original response, including its status code and body, so it can finish its own flow.
+
+Store the full response alongside the key, with a TTL long enough to cover the retry window. If the operation is in flight, return a conflict or a "pending" status rather than a blind rejection.
+
+```sql
+CREATE TABLE idempotency_record (
+  key         TEXT PRIMARY KEY,
+  status      TEXT NOT NULL,
+  status_code INT  NOT NULL,
+  body        JSONB NOT NULL,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  expires_at  TIMESTAMPTZ NOT NULL
+);
+```
+
+The primary key is the whole design. Concurrent retries of the same key serialize on one row; the first insert wins, the rest read what the first wrote.
+
+## The dangerous window
+
+The hard part is not the happy path. It is the moment between "I committed the effect" and "I stored the response." If the process dies there, the retry sees no record and repeats the effect.
+
+Two ways out:
+
+- Make the effect and the record one transaction, when they live in the same database.
+- When they do not, accept that a tiny window exists, make it as small as possible, and reconcile asynchronously.
+
+Do not pretend the window does not exist. Decide which side of it you land on and document it.
+
+## HTTP is a hint, not a guarantee
+
+`POST` is not defined to be idempotent, but that does not mean your `POST` cannot be. Add an `Idempotency-Key` header, document the retention period, and make the behavior testable. `GET`, `PUT`, and `DELETE` have stronger guarantees, but a poorly designed `PUT` can still be wrong.
+
+## Checklist
+
+- Key generated before the first attempt and reused on retry.
+- Full response stored, not a boolean.
+- TTL at least as long as the client retry budget.
+- Concurrent same-key requests cannot both execute the effect.
+- The failure window between effect and record is measured and owned.

@@ -1,0 +1,55 @@
+---
+title: "How Linux Schedules Your Process"
+description: "Your process is not running most of the time. Understanding the scheduler explains latency spikes that look like magic."
+date: 2026-10-12
+category: "Operating Systems and Linux"
+tags: [linux, kernel, scheduling, processes]
+---
+
+A process on Linux is not a thing that runs. It is a thing that is *runnable*, waiting to be picked by the scheduler. The difference matters when you are chasing a latency tail.
+
+The default scheduler, CFS, treats CPU time as a budget to be divided fairly. It does not care about your p99. Knowing that is the first step toward caring about it yourself.
+
+## The run queue is the truth
+
+Every CPU has a run queue. When a task wakes up, it joins a queue. When it blocks on I/O, it leaves. The scheduler picks from the queue by a virtual runtime: the task that has received the least CPU time goes next.
+
+That is the whole idea, and it explains a lot. A busy background job on the same core does not just slow you down by consuming cycles; it changes the queueing order.
+
+```bash
+# Watch run-queue length and context switches
+vmstat 1
+pidstat -w 1
+
+# Which CPU is a process actually running on?
+perf stat -e sched:sched_migrate_task -p "$PID"
+```
+
+## Nice is a weight, not a priority
+
+`nice` adjusts how much CPU a task receives relative to others. It does not make a task "low priority" in the sense of being skipped. Under load, a niced task still runs; it just gets a smaller share. If you want a real latency guarantee, nice is the wrong tool.
+
+`chrt` and real-time policies (`SCHED_FIFO`, `SCHED_RR`) are the real tool, and they are dangerous: a runaway real-time task can starve the system. Use them only when you have measured that CFS cannot meet the deadline.
+
+## Wakeups are where tails live
+
+A task blocked on disk or network wakes up, becomes runnable, and may migrate to another CPU. Migration costs a cache cold start. The scheduler tries to keep a task on its previous CPU ("cache affinity"), but under load it will move.
+
+If you see a tail that correlates with I/O, suspect the wakeup path, not the I/O itself. `sched_wakeup` tracepoints and `perf sched` show it.
+
+## Cgroup bandwidth control
+
+In a container, CPU limits are enforced by a cgroup bandwidth controller. A container with a 0.5 CPU limit gets throttled once it exceeds its quota in a period, even if the host is idle. Throttling shows up as latency with low CPU utilization, which is confusing until you look at it.
+
+```bash
+cat /sys/fs/cgroup/cpu.stat          # throttled_usec
+cat /sys/fs/cgroup/cpu.max           # quota / period
+```
+
+## Practical checklist
+
+- Watch run-queue length per CPU, not just load average.
+- Distinguish nice (weight) from real-time policy (guarantee).
+- Treat wakeup and migration as latency sources.
+- Check cgroup throttling before blaming the application.
+- Pin only after measuring; pinning can make things worse.
