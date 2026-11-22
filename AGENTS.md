@@ -53,7 +53,8 @@ For content or MDX changes, run `validate:content`, `typecheck`, `lint`, `test`,
 ## Testing
 
 - Vitest includes `src/tests/**/*.test.ts` and `src/**/*.test.ts`, environment `node`.
-- Pure TS only: content layer, schema/publication rules, search, SEO, heading extraction, and the validator script. There is no jsdom, React Testing Library, or Playwright installed despite the docs; don't write DOM-dependent tests without adding and justifying that setup.
+- Pure TS only: content layer, schema/publication rules, search, SEO, heading extraction, and the validator script. Don't write DOM-dependent unit tests (jsdom/RTL/jsdom) without adding Playwright.
+- E2E lives in `tests/e2e/*.spec.ts` (Chromium + Pixel 5). `npm run test:e2e` runs it against `http://localhost:3000`.
 - Coverage thresholds apply to `src/lib/**` and `scripts/**`, so new content-layer code needs tests.
 
 ## Design system

@@ -53,6 +53,7 @@ export function Navigation() {
             href="/"
             className="group inline-flex items-center gap-3 text-ink"
             aria-label="LORD VOID — home"
+            onClick={() => setOpen(false)}
           >
             <span className="text-ink-muted transition-colors group-hover:text-ink">
               <VoidMark />
@@ -151,6 +152,7 @@ export function Navigation() {
               <li>
                 <a
                   href="/rss.xml"
+                  onClick={() => setOpen(false)}
                   className="flex items-baseline justify-between py-3.5 text-ink"
                 >
                   <span className="font-display text-2xl">RSS</span>

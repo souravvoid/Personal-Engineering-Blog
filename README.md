@@ -50,6 +50,7 @@ Open [http://localhost:3000](http://localhost:3000).
 | `npm run validate:content` | Validate every MDX file and fail on bad slugs/frontmatter |
 | `npm test` | Run the Vitest unit suite |
 | `npm run test:coverage` | Enforce coverage thresholds |
+| `npm run test:e2e` | Run Playwright E2E tests on Chromium and mobile Chrome (`npx playwright install chromium` once) |
 
 ## Routes
 
