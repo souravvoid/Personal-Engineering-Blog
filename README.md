@@ -57,10 +57,4 @@ Open [http://localhost:3000](http://localhost:3000).
 `/`, `/articles`, `/articles/[slug]`, `/categories`, `/categories/[slug]`, `/tags`,
 `/tags/[slug]`, `/archive`, `/search`, `/about`, `/rss.xml`, `/sitemap.xml`, `/robots.txt`.
 
-## Git
 
-`main` is the production branch. `origin` uses SSH:
-
-```
-git@github.com:souravvoid/Personal-Engineering-Blog.git
-```
