@@ -51,6 +51,19 @@ export function allow(
 
 The Lua script matters. Two separate Redis calls let a concurrent request slip through between them. One script is atomic and still cheap.
 
+The decision path is short. The interesting part is which state it reads and what it does when that state is unavailable.
+
+```mermaid
+flowchart LR
+  R["Incoming request"] --> W["Read current + previous window"]
+  W --> E["Estimate usage"]
+  E --> D{"estimate >= limit?"}
+  D -- "yes" --> X["Reject with 429"]
+  D -- "no" --> A["Allow and increment"]
+  A --> S[("Redis state")]
+  X --> S
+```
+
 ## Failure is a design input
 
 The question that separates a demo from a production limiter is: what do you do when Redis is down?

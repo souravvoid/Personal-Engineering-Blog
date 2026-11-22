@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  cn,
   excerpt,
   formatDate,
+  formatTag,
   isValidSlug,
   normalizeTags,
   readingTimeLabel,
@@ -9,6 +11,18 @@ import {
   slugify,
   wordCount,
 } from "@/lib/utils";
+
+describe("cn", () => {
+  it("joins truthy class names", () => {
+    expect(cn("a", false, null, undefined, "b")).toBe("a b");
+  });
+});
+
+describe("formatTag", () => {
+  it("turns a slug into a readable label", () => {
+    expect(formatTag("rate-limiting")).toBe("rate limiting");
+  });
+});
 
 describe("slugify", () => {
   it("lowercases and hyphenates", () => {

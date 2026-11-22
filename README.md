@@ -1,25 +1,28 @@
-# Personal Engineering Blog
+# LORD VOID
 
-A standalone, publication-quality personal engineering blog. Content lives as MDX in this
-repository and is deployed automatically by Vercel on push to `main`.
+A standalone, publication-quality technical blog. Articles are MDX files committed to this
+repository; there is no database, CMS, or backend.
 
 **This repository is separate from the existing portfolio project.**
 
 ## Stack
 
 - Next.js 16 (App Router) + React 19
-- TypeScript (strict)
-- Tailwind CSS 4
-- MDX via `next-mdx-remote/rsc` (added in Phase 2)
-- Hosted on Vercel
+- TypeScript (strict, `noUncheckedIndexedAccess`)
+- Tailwind CSS 4 (CSS-first tokens in `src/app/globals.css`)
+- MDX via `next-mdx-remote/rsc` with build-time Shiki highlighting and lazy Mermaid diagrams
+- Self-hosted Rubik (UI) and Space Grotesk (display), licensed under the OFL (see `src/fonts/`)
+- Dependency-free client-side search over published article metadata
 
-See [`docs/PRD.md`](docs/PRD.md), [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md),
-[`docs/DESIGN_SPEC.md`](docs/DESIGN_SPEC.md), and
-[`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) for the full specification.
+The visual system follows [`docs/desgin.md`](docs/desgin.md), the supplied design spec.
 
 ## Status
 
-Phase 0 — repository and tooling setup.
+Implemented: content validation, all public routes, article reading experience, Mermaid
+diagrams, client-side search, RSS, sitemap, robots, and Open Graph images.
+
+Deployment target is not yet committed. Set `NEXT_PUBLIC_SITE_URL` to the production origin
+before deploying so canonical URLs, RSS, and the sitemap use the correct domain.
 
 ## Requirements
 
@@ -40,14 +43,22 @@ Open [http://localhost:3000](http://localhost:3000).
 | Script | Purpose |
 |---|---|
 | `npm run dev` | Start the development server |
-| `npm run build` | Produce a production build |
+| `npm run build` | Validate content, then produce a production build |
 | `npm run start` | Serve the production build |
 | `npm run lint` | Run ESLint |
 | `npm run typecheck` | Check TypeScript types |
+| `npm run validate:content` | Validate every MDX file and fail on bad slugs/frontmatter |
+| `npm test` | Run the Vitest unit suite |
+| `npm run test:coverage` | Enforce coverage thresholds |
+
+## Routes
+
+`/`, `/articles`, `/articles/[slug]`, `/categories`, `/categories/[slug]`, `/tags`,
+`/tags/[slug]`, `/archive`, `/search`, `/about`, `/rss.xml`, `/sitemap.xml`, `/robots.txt`.
 
 ## Git
 
-The `main` branch deploys to production on Vercel. `origin` uses SSH:
+`main` is the production branch. `origin` uses SSH:
 
 ```
 git@github.com:souravvoid/Personal-Engineering-Blog.git

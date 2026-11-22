@@ -2,6 +2,13 @@
  * Small, dependency-free helpers shared by the content layer, scripts, and UI.
  */
 
+/** Join conditional class names without adding a dependency. */
+export function cn(
+  ...values: Array<string | false | null | undefined>
+): string {
+  return values.filter(Boolean).join(" ");
+}
+
 /** Lowercase kebab-case slug, used for filenames, tags, categories, and URLs. */
 export function slugify(input: string): string {
   return input
@@ -26,6 +33,11 @@ export function normalizeTags(tags: readonly string[] | undefined): string[] {
     if (normalized) seen.add(normalized);
   }
   return [...seen].sort();
+}
+
+/** Human-readable label for a normalized tag slug. */
+export function formatTag(tag: string): string {
+  return tag.replaceAll("-", " ");
 }
 
 /** Words per minute used for reading-time estimates. */

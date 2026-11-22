@@ -52,7 +52,8 @@ export class ContentValidationError extends Error {
   }
 }
 
-function toArticle(raw: RawArticle): Article {
+/** Validate a raw file into an Article. Exported for tests and tooling. */
+export function articleFromRaw(raw: RawArticle): Article {
   if (!isValidSlug(raw.slug)) {
     throw new ContentValidationError(raw.slug, [
       {
@@ -101,7 +102,7 @@ function compareArticles(a: Article, b: Article): number {
  * Throws ContentValidationError on the first invalid file.
  */
 export function loadAllArticles(): Article[] {
-  return readAllRawArticles().map(toArticle).sort(compareArticles);
+  return readAllRawArticles().map(articleFromRaw).sort(compareArticles);
 }
 
 /** Published articles only, governed by the publication filter. */
@@ -165,4 +166,67 @@ export function getTagCounts(options: { includeDrafts?: boolean } = {}): TagCoun
   return [...counts.entries()]
     .map(([tag, count]) => ({ tag, count }))
     .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
+}
+
+/**
+ * Related articles: same category first, then shared tags, then same series.
+ * If there are not enough relevant matches, the newest remaining articles fill
+ * the list so the reading surface is never empty.
+ */
+export function getRelatedArticles(
+  article: Article,
+  options: { limit?: number; includeDrafts?: boolean } = {},
+): Article[] {
+  const limit = options.limit ?? 3;
+  const pool = getAllArticles({ includeDrafts: options.includeDrafts }).filter(
+    (candidate) => candidate.slug !== article.slug,
+  );
+
+  const scored = pool
+    .map((candidate) => {
+      let score = 0;
+      if (candidate.category === article.category) score += 3;
+      score +=
+        candidate.tags.filter((tag) => article.tags.includes(tag)).length * 2;
+      if (article.series && candidate.series === article.series) score += 2;
+      return { candidate, score };
+    })
+    .filter((entry) => entry.score > 0)
+    .sort(
+      (a, b) =>
+        b.score - a.score ||
+        b.candidate.date.localeCompare(a.candidate.date) ||
+        a.candidate.slug.localeCompare(b.candidate.slug),
+    );
+
+  const related = scored.map((entry) => entry.candidate).slice(0, limit);
+  if (related.length >= limit) return related;
+
+  const chosen = new Set(related.map((item) => item.slug));
+  for (const candidate of pool) {
+    if (related.length >= limit) break;
+    if (chosen.has(candidate.slug)) continue;
+    related.push(candidate);
+    chosen.add(candidate.slug);
+  }
+  return related;
+}
+
+export type AdjacentArticles = {
+  newer: Article | null;
+  older: Article | null;
+};
+
+/** Neighbouring articles in reverse-chronological order. */
+export function getAdjacentArticles(
+  article: Article,
+  options: { includeDrafts?: boolean } = {},
+): AdjacentArticles {
+  const articles = getAllArticles(options);
+  const index = articles.findIndex((item) => item.slug === article.slug);
+  if (index === -1) return { newer: null, older: null };
+  return {
+    newer: index > 0 ? articles[index - 1] ?? null : null,
+    older: index < articles.length - 1 ? articles[index + 1] ?? null : null,
+  };
 }

@@ -1,21 +1,12 @@
 import { z } from "zod";
+import { categories, type Category } from "./categories";
 
 /**
  * Controlled vocabulary for article categories.
- * Every article belongs to exactly one category.
+ * Defined in `categories.ts`, which is also safe to import from client code.
  */
-export const categories = [
-  "System Design and Architecture",
-  "Backend Engineering",
-  "Distributed Systems",
-  "Cybersecurity and Information Security",
-  "Operating Systems and Linux",
-  "Database Engineering",
-  "Software Engineering Principles",
-  "Engineering Experiments and Personal Technical Notes",
-] as const;
-
-export type Category = (typeof categories)[number];
+export { categories };
+export type { Category };
 
 /** Filenames must be lowercase kebab-case and unique. */
 export const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;

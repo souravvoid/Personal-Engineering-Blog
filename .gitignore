@@ -13,6 +13,7 @@ out/
 npm-debug.log*
 *.tsbuildinfo
 .DS_Store
+coverage/
 
 # Generated at build time
 public/search-index.json
