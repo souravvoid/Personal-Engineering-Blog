@@ -45,10 +45,3 @@ Open [http://localhost:3000](http://localhost:3000).
 | `npm run lint` | Run ESLint |
 | `npm run typecheck` | Check TypeScript types |
 
-## Git
-
-The `main` branch deploys to production on Vercel. `origin` uses SSH:
-
-```
-git@github.com:souravvoid/Personal-Engineering-Blog.git
-```
