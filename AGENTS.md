@@ -53,9 +53,16 @@ For content or MDX changes, run `validate:content`, `typecheck`, `lint`, `test`,
 ## Testing
 
 - Vitest includes `src/tests/**/*.test.ts` and `src/**/*.test.ts`, environment `node`.
-- Pure TS only: content layer, schema/publication rules, search, SEO, heading extraction, and the validator script. Don't write DOM-dependent unit tests (jsdom/RTL/jsdom) without adding Playwright.
+- Pure TS: content layer, schema/publication rules, search, SEO, heading extraction, validator script (`src/tests/unit/**`).
+- RTL component tests (`src/tests/components/*.test.tsx`, jsdom) for Navigation, TableOfContents, CopyButton; axe-core smoke assertions run as vitest (`src/tests/components/a11y.test.tsx`).
 - E2E lives in `tests/e2e/*.spec.ts` (Chromium + Pixel 5). `npm run test:e2e` runs it against `http://localhost:3000`.
 - Coverage thresholds apply to `src/lib/**` and `scripts/**`, so new content-layer code needs tests.
+- Generated artifacts: `public/search-index.json` (gitignored) built by `scripts/build-search-index.ts` and wired into `npm run build`. `npm run launch-readiness` runs build + smoke + E2E against the production build.
+
+## Security & infrastructure
+
+- `src/proxy.ts` sets a CSP nonce + security headers (HSTS, X-Frame-Options, Referrer-Policy, etc.) on every response via the strict-CSP pattern; components with inline scripts (`JsonLd`) read `x-nonce` from `await headers()`.
+- CI runs on PRs, push to main, and merge queues (`.github/workflows/ci.yml`). `gitleaks/gitleaks-action` scans for secrets on push.
 
 ## Design system
 
@@ -66,7 +73,7 @@ For content or MDX changes, run `validate:content`, `typecheck`, `lint`, `test`,
 
 ## Docs vs. code, open decisions
 
-- The README now reflects the implemented UI, but the older `docs/PRD.md`, `DESIGN_SPEC.md`, and `IMPLEMENTATION_PLAN.md` still describe a different (Cora-inspired, light) visual direction and unbuilt tooling (MiniSearch, Lucide, RTL/Playwright, CI, `public/`, Vercel). The supplied `docs/desgin.md` is the design source of truth for the current UI.
+- The older `docs/PRD.md`, `DESIGN_SPEC.md`, and `IMPLEMENTATION_PLAN.md` still describe a different (Cora-inspired, light) visual direction and unbuilt tooling (MiniSearch, Lucide, `public/`, Vercel). The supplied `docs/desgin.md` is the design source of truth for the current UI.
 - Product name and deployment target remain unresolved: docs describe "Personal Engineering Blog" on Vercel, the LORD VOID brief specifies Embarko, and no host config is committed. Confirm before renaming, re-theming, migrating stacks, or deploying.
 - Canonical URLs fall back to localhost. Set `NEXT_PUBLIC_SITE_URL` in the hosting environment before launch.
 - Keep temporary research out of the repo: `docs/research/` and `public/search-index.json` are gitignored.

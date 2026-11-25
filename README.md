@@ -48,13 +48,21 @@ Open [http://localhost:3000](http://localhost:3000).
 | `npm run lint` | Run ESLint |
 | `npm run typecheck` | Check TypeScript types |
 | `npm run validate:content` | Validate every MDX file and fail on bad slugs/frontmatter |
-| `npm test` | Run the Vitest unit suite |
+| `npm test` | Run the Vitest unit suite (unit + jsdom component/axe tests) |
 | `npm run test:coverage` | Enforce coverage thresholds |
 | `npm run test:e2e` | Run Playwright E2E tests on Chromium and mobile Chrome (`npx playwright install chromium` once) |
+| `npm run build:search-index` | Build `public/search-index.json` (wired into `npm run build`) |
+| `npm run launch-readiness` | Run build + route smoke checks + E2E on the production build |
 
 ## Routes
 
 `/`, `/articles`, `/articles/[slug]`, `/categories`, `/categories/[slug]`, `/tags`,
 `/tags/[slug]`, `/archive`, `/search`, `/about`, `/rss.xml`, `/sitemap.xml`, `/robots.txt`.
+
+## Deployment
+
+See [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) §9 for the Vercel plan. The build is `npm run build`; run `npm run launch-readiness` to smoke-check the production output.
+
+The domain is configured only after DNS is confirmed (e.g., `blog.souravvoid.dev`) — see `NEXT_PUBLIC_SITE_URL` in AGENTS.md.
 
 
